@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Calculator</title>
+    <style>
+        :root {
+            --primary-dark: #2c3e50;
+            --primary: #34495e;
+            --primary-light: #4a627a;
+            --accent: #056ddc;
+            --accent-light: #3189c4;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --text-light: #ecf0f1;
+            --text-dark: #2c3e50;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            --border-radius: 15px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator {
+            width: 100%;
+            max-width: 320px;
+            background-color: var(--primary-dark);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .display {
+            padding: 20px;
+            text-align: right;
+            background-color: var(--primary);
+            color: var(--text-light);
+            position: relative;
+        }
+
+        .previous-operand {
+            font-size: 1rem;
+            color: rgba(236, 240, 241, 0.7);
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .current-operand {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-top: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background-color: var(--primary-light);
+        }
+
+        button {
+            border: none;
+            outline: none;
+            padding: 20px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--primary);
+            color: var(--text-light);
+        }
+
+        button:hover {
+            background-color: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .span-2 {
+            grid-column: span 2;
+        }
+
+        .operation {
+            background-color: var(--primary-light);
+            font-weight: 500;
+        }
+
+        .operation:hover {
+            background-color: var(--accent);
+        }
+
+        .equals {
+            background-color: var(--accent);
+            font-weight: 500;
+        }
+
+        .equals:hover {
+            background-color: var(--accent-light);
+        }
+
+        .clear {
+            background-color: var(--danger);
+        }
+
+        .clear:hover {
+            background-color: #c0392b;
+        }
+
+        .delete {
+            background-color: var(--warning);
+        }
+
+        .delete:hover {
+            background-color: #d35400;
+        }
+
+        .power {
+            background-color: #32c46f;
+            font-weight: 500;
+        }
+
+        .power:hover {
+            background-color: var(--accent);
+        }
+
+        @media (max-width: 400px) {
+            button {
+                padding: 15px;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="previous-operand" id="previous-operand"></div>
+            <div class="current-operand" id="current-operand">0</div>
+        </div>
+        <div class="buttons">
+            <button class="clear">AC</button>
+            <button class="delete">DEL</button>
+            <button class="power">^</button>
+            <button class="operation">÷</button>
+            <button>7</button>
+            <button>8</button>
+            <button>9</button>
+            <button class="operation">×</button>
+            <button>4</button>
+            <button>5</button>
+            <button>6</button>
+            <button class="operation">-</button>
+            <button>1</button>
+            <button>2</button>
+            <button>3</button>
+            <button class="operation">+</button>
+            <button class="span-2">0</button>
+            <button>.</button>
+            <button class="equals">=</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const previousOperandElement = document.getElementById('previous-operand');
+            const currentOperandElement = document.getElementById('current-operand');
+            const numberButtons = document.querySelectorAll('.buttons button:not(.operation):not(.equals):not(.clear):not(.delete):not(.power)');
+            const operationButtons = document.querySelectorAll('.operation');
+            const powerButton = document.querySelector('.power');
+            const equalsButton = document.querySelector('.equals');
+            const clearButton = document.querySelector('.clear');
+            const deleteButton = document.querySelector('.delete');
+
+            let currentOperand = '0';
+            let previousOperand = '';
+            let operation = undefined;
+            let resetScreen = false;
+
+            function updateDisplay() {
+                currentOperandElement.innerText = currentOperand;
+                if (operation != null) {
+                    previousOperandElement.innerText = `${previousOperand} ${operation}`;
+                } else {
+                    previousOperandElement.innerText = '';
+                }
+            }
+
+            function appendNumber(number) {
+                if (currentOperand === '0' || resetScreen) {
+                    currentOperand = number;
+                    resetScreen = false;
+                } else {
+                    currentOperand += number;
+                }
+            }
+
+            function addDecimal() {
+                if (resetScreen) {
+                    currentOperand = '0.';
+                    resetScreen = false;
+                    return;
+                }
+                if (currentOperand.includes('.')) return;
+                currentOperand += '.';
+            }
+
+            function chooseOperation(op) {
+                if (currentOperand === '') return;
+                if (previousOperand !== '') {
+                    compute();
+                }
+                operation = op;
+                previousOperand = currentOperand;
+                resetScreen = true;
+            }
+
+            function compute() {
+                let computation;
+                const prev = parseFloat(previousOperand);
+                const current = parseFloat(currentOperand);
+                if (isNaN(prev)) return;
+
+                switch (operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '×':
+                        computation = prev * current;
+                        break;
+                    case '÷':
+                        computation = prev / current;
+                        break;
+                    case '^':
+                        computation = Math.pow(prev, current);
+                        break;
+                    default:
+                        return;
+                }
+
+                currentOperand = computation.toString();
+                operation = undefined;
+                previousOperand = '';
+                resetScreen = true;
+            }
+
+            function clear() {
+                currentOperand = '0';
+                previousOperand = '';
+                operation = undefined;
+            }
+
+            function deleteNumber() {
+                if (currentOperand.length === 1 || (currentOperand.length === 2 && currentOperand.startsWith('-'))) {
+                    currentOperand = '0';
+                } else {
+                    currentOperand = currentOperand.slice(0, -1);
+                }
+            }
+
+            numberButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (button.innerText === '.' && currentOperand.includes('.')) return;
+                    if (button.innerText === '.') {
+                        addDecimal();
+                    } else {
+                        appendNumber(button.innerText);
+                    }
+                    updateDisplay();
+                });
+            });
+
+            operationButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    chooseOperation(button.innerText);
+                    updateDisplay();
+                });
+            });
+
+            powerButton.addEventListener('click', () => {
+                chooseOperation('^');
+                updateDisplay();
+            });
+
+            equalsButton.addEventListener('click', () => {
+                compute();
+                updateDisplay();
+            });
+
+            clearButton.addEventListener('click', () => {
+                clear();
+                updateDisplay();
+            });
+
+            deleteButton.addEventListener('click', () => {
+                deleteNumber();
+                updateDisplay();
+            });
+
+            // Keyboard support
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= 0 && e.key <= 9) appendNumber(e.key);
+                else if (e.key === '.') addDecimal();
+                else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/' || e.key === '^') {
+                    chooseOperation(e.key === '*' ? '×' : e.key === '/' ? '÷' : e.key);
+                }
+                else if (e.key === 'Enter' || e.key === '=') compute();
+                else if (e.key === 'Escape') clear();
+                else if (e.key === 'Backspace') deleteNumber();
+                updateDisplay();
+            });
+        });
+    </script>
+</body>
+</html>
